@@ -1,0 +1,69 @@
+networks:
+  arctic-fox-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  prom-data:
+  grafana-data:
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: arctic-fox-mysql
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-3456}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: "Asia/Seoul"
+    command:
+      - --default-time-zone=+09:00
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+      - --max_allowed_packet=256M
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - arctic-fox-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: arctic-fox-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom-data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - arctic-fox-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: arctic-fox-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      TZ: Asia/Seoul
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - arctic-fox-network
