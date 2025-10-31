@@ -1,8 +1,10 @@
 package com.cheese.ArcticFox.v1.category.presentation;
 
 import com.cheese.ArcticFox.v1.category.application.dto.request.CreateCategoryRequest;
+import com.cheese.ArcticFox.v1.category.application.dto.request.UpdateCategoryRequest;
 import com.cheese.ArcticFox.v1.category.application.dto.response.CreateCategoryResponse;
 import com.cheese.ArcticFox.v1.category.application.dto.response.GetCategoryResponse;
+import com.cheese.ArcticFox.v1.category.application.dto.response.UpdateCategoryResponse;
 import com.cheese.ArcticFox.v1.category.application.service.CategoryV1Service;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
@@ -10,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +43,14 @@ public class CategoryV1Controller {
             @RequestParam(name = "path", required = false) @Nullable String path
     ) {
         GetCategoryResponse response = categoryV1Service.get(path);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{categoryId}")
+    public ResponseEntity<UpdateCategoryResponse> update(
+            @PathVariable(name = "categoryId") Long categoryId,
+            @RequestBody @Valid UpdateCategoryRequest request) {
+        UpdateCategoryResponse response = categoryV1Service.update(categoryId, request);
         return ResponseEntity.ok(response);
     }
 }

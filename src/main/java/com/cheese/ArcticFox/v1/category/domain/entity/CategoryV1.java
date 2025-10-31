@@ -38,4 +38,12 @@ public class CategoryV1 {
         return new CategoryV1(name);
     }
 
+    public void updateName(String newName) {
+        if (newName == null || newName.isEmpty()) {
+            throw new IllegalArgumentException("New name cannot be null or empty");
+        }
+
+        this.name = newName;
+    }
+
 }
