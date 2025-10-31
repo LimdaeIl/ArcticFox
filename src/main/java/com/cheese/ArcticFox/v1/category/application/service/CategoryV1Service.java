@@ -171,4 +171,20 @@ public class CategoryV1Service {
 
         return UpdateCategoryResponse.from(categoryV1);
     }
+
+    @Transactional
+    public void delete(Long categoryId) {
+        CategoryV1 category = categoryV1Repository.findById(categoryId)
+                .orElseThrow(() -> new IllegalArgumentException("Category not found: id=" + categoryId));
+
+        if (categoryV1ClosureRepository.existsDirectChild(categoryId)) {
+            List<String> childNames = categoryV1ClosureRepository.findDirectChildren(categoryId)
+                    .stream().map(CategoryV1::getName).toList();
+            throw new IllegalStateException("Only leaf categories can be deleted. Children: " + String.join(", ", childNames));
+        }
+
+        categoryV1ClosureRepository.deleteAllLinksOf(categoryId);
+
+        categoryV1Repository.delete(category);
+    }
 }
