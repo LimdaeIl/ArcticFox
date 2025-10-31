@@ -52,4 +52,11 @@ public interface CategoryV1ClosureRepository extends
            or cc.id.descendantId = :id
     """)
     int deleteAllLinksOf(Long id);
+
+    @Query("""
+        select coalesce(max(cc.level), 0)
+        from CategoryV1Closure cc
+        where cc.id.descendantId = :id
+    """)
+    int findDepthOf(Long id);
 }

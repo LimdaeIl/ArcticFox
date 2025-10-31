@@ -24,6 +24,9 @@ public class CategoryV1Service {
     private final CategoryV1Repository categoryV1Repository;
     private final CategoryV1ClosureRepository categoryV1ClosureRepository;
 
+    private static final int MAX_DEPTH = 3;
+
+
     private void existsByName(String name) {
         if (categoryV1Repository.existsByName(name)) {
             throw new IllegalArgumentException("Category already exists with name " + name);
@@ -32,33 +35,43 @@ public class CategoryV1Service {
 
     @Transactional
     public CreateCategoryResponse create(CreateCategoryRequest request) {
-        // 카테고리명 공백, null, 중복 여부 검사
+        // 0) 요청 검증 + 1) 중복 검사
         String trimCategoryName = request.name().trim();
         existsByName(trimCategoryName);
 
-        // 카테고리 save()
+        // 2) 카테고리 저장
         CategoryV1 savedCategory = categoryV1Repository.save(CategoryV1.create(trimCategoryName));
 
-        // 자기 자신의 경로 생성
-        CategoryV1Closure closure = CategoryV1Closure.create(
-                CategoryV1ClosureId.create(
-                        savedCategory.getId(),
-                        savedCategory.getId()
-                ),
-                0,
-                savedCategory,
-                savedCategory
+        // 3) 자기 경로 삽입 (N,N,0)
+        CategoryV1Closure self = CategoryV1Closure.create(
+                CategoryV1ClosureId.create(savedCategory.getId(), savedCategory.getId()),
+                0, savedCategory, savedCategory
         );
+        CategoryV1Closure savedClosure = categoryV1ClosureRepository.save(self);
+        CategoryV1Closure responseClosure = savedClosure;
 
-        // closure 저장
-        CategoryV1Closure savedClosure = categoryV1ClosureRepository.save(closure);
-        CategoryV1Closure responseClosure = savedClosure; // 기본값: (N,N,0)
-
+        // 4) 부모가 있으면: 깊이 체크 → 링크 생성
         if (request.parentId() != null) {
             CategoryV1 parent = categoryV1Repository.findById(request.parentId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Parent category not found with id " + request.parentId()));
 
+            int parentDepth = categoryV1ClosureRepository.findDepthOf(parent.getId());
+            int newChildDepth = parentDepth + 1;
+            if (newChildDepth > MAX_DEPTH) {
+                throw new IllegalStateException(
+                        "카테고리 깊이는 최대 "
+                                + MAX_DEPTH + "단계까지 허용됩니다. "
+                                + "(부모=" + parent.getName()
+                                + ", 부모깊이="
+                                + parentDepth
+                                + ", 새깊이="
+                                + newChildDepth
+                                + ")"
+                );
+            }
+
+            // 4-1) 부모의 모든 조상 경로 가져와서 (a, N, depth(a→P)+1) 삽입
             List<CategoryV1Closure> ancestorsOfParent =
                     categoryV1ClosureRepository.findByDescendant_Id(parent.getId());
 
@@ -69,9 +82,10 @@ public class CategoryV1Service {
             responseClosure = newLinks.stream()
                     .filter(c -> c.getId().getAncestorId().equals(parent.getId()))
                     .findFirst()
-                    .orElse(savedClosure); // 안전장치
+                    .orElse(savedClosure);
         }
 
+        // 5) 응답 생성
         return CreateCategoryResponse.from(savedCategory, responseClosure);
     }
 
@@ -118,10 +132,14 @@ public class CategoryV1Service {
 
         // (선택) 부모-자식 직계 검증
         for (int i = 1; i < trail.size(); i++) {
-            if (!categoryV1ClosureRepository.existsDirectLink(trail.get(i - 1).getId(),
-                    trail.get(i).getId())) {
-                throw new IllegalArgumentException("Invalid path: " + trail.get(i - 1).getName()
-                        + " -> " + trail.get(i).getName());
+            if (!categoryV1ClosureRepository
+                    .existsDirectLink(trail.get(i - 1).getId(), trail.get(i).getId())) {
+                throw new IllegalArgumentException(
+                        "Invalid path: "
+                                + trail.get(i - 1).getName()
+                                + " -> "
+                                + trail.get(i).getName()
+                );
             }
         }
 
@@ -175,16 +193,18 @@ public class CategoryV1Service {
     @Transactional
     public void delete(Long categoryId) {
         CategoryV1 category = categoryV1Repository.findById(categoryId)
-                .orElseThrow(() -> new IllegalArgumentException("Category not found: id=" + categoryId));
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Category not found: id=" + categoryId));
 
         if (categoryV1ClosureRepository.existsDirectChild(categoryId)) {
             List<String> childNames = categoryV1ClosureRepository.findDirectChildren(categoryId)
                     .stream().map(CategoryV1::getName).toList();
-            throw new IllegalStateException("Only leaf categories can be deleted. Children: " + String.join(", ", childNames));
+            throw new IllegalStateException(
+                    "Only leaf categories can be deleted. Children: " + String.join(", ",
+                            childNames));
         }
 
         categoryV1ClosureRepository.deleteAllLinksOf(categoryId);
-
         categoryV1Repository.delete(category);
     }
 }
