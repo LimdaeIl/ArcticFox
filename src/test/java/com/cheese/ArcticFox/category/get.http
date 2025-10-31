@@ -1,0 +1,5 @@
+### 카테고리 조회
+GET http://localhost:40000/api/v1/categories?path=test3/1test6
+Content-Type: application/json
+
+
