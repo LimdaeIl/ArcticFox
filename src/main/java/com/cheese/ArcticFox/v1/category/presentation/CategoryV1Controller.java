@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,5 +53,12 @@ public class CategoryV1Controller {
             @RequestBody @Valid UpdateCategoryRequest request) {
         UpdateCategoryResponse response = categoryV1Service.update(categoryId, request);
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{categoryId}")
+    public ResponseEntity<Void> delete(
+            @PathVariable(name = "categoryId") Long categoryId) {
+        categoryV1Service.delete(categoryId);
+        return ResponseEntity.noContent().build();
     }
 }
