@@ -1,9 +1,11 @@
 package com.cheese.ArcticFox.v1.category.application.service;
 
 import com.cheese.ArcticFox.v1.category.application.dto.request.CreateCategoryRequest;
+import com.cheese.ArcticFox.v1.category.application.dto.request.UpdateCategoryRequest;
 import com.cheese.ArcticFox.v1.category.application.dto.response.CreateCategoryResponse;
 import com.cheese.ArcticFox.v1.category.application.dto.response.GetCategoryResponse;
 import com.cheese.ArcticFox.v1.category.application.dto.response.GetCategoryResponse.CategoryNodeResponse;
+import com.cheese.ArcticFox.v1.category.application.dto.response.UpdateCategoryResponse;
 import com.cheese.ArcticFox.v1.category.domain.entity.CategoryV1;
 import com.cheese.ArcticFox.v1.category.domain.entity.CategoryV1Closure;
 import com.cheese.ArcticFox.v1.category.domain.entity.CategoryV1ClosureId;
@@ -154,5 +156,19 @@ public class CategoryV1Service {
         path = path.replaceAll("^/+|/+$", "");
         path = path.replaceAll("/+", "/");
         return path;
+    }
+
+    @Transactional
+    public UpdateCategoryResponse update(Long categoryId, UpdateCategoryRequest request) {
+        existsByName(request.newName());
+
+        CategoryV1 categoryV1 = categoryV1Repository.findById(categoryId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Category not found: " + categoryId));
+
+        categoryV1Repository.existsByName(request.newName());
+        categoryV1.updateName(request.newName());
+
+        return UpdateCategoryResponse.from(categoryV1);
     }
 }
