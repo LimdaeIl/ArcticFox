@@ -10,9 +10,7 @@ import com.cheese.ArcticFox.v1.category.domain.entity.CategoryV1ClosureId;
 import com.cheese.ArcticFox.v1.category.domain.repository.CategoryV1ClosureRepository;
 import com.cheese.ArcticFox.v1.category.domain.repository.CategoryV1Repository;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,43 +97,47 @@ public class CategoryV1Service {
     public GetCategoryResponse get(String path) {
         List<CategoryNodeResponse> roots = mapToNodeResponse(categoryV1Repository.findRoots());
 
-        if (roots.isEmpty() || path == null) {
-            return GetCategoryResponse.of(
-                    roots,
-                    Collections.emptyList(),
-                    Collections.emptyList(),
-                    Collections.emptyList()
-            );
+        if (path == null || path.isBlank()) {
+            return GetCategoryResponse.of(roots, List.of(), List.of(), List.of());
         }
 
-        String[] names = normalize(path).split("/");
-        List<CategoryV1> trail = new ArrayList<>();
+        String normalized = normalize(path);
+        if (normalized.isEmpty()) { // "/", " // " 방어
+            return GetCategoryResponse.of(roots, List.of(), List.of(), List.of());
+        }
 
+        String[] names = normalized.split("/");
+        List<CategoryV1> trail = new ArrayList<>(names.length);
         for (String name : names) {
-            Optional<CategoryV1> byName = categoryV1Repository.findByName(name);
+            CategoryV1 node = categoryV1Repository.findByName(name)
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found: " + name));
+            trail.add(node);
+        }
 
-            if (byName.isEmpty()) {
-                throw new IllegalArgumentException("Category not found with name " + name);
+        // (선택) 부모-자식 직계 검증
+        for (int i = 1; i < trail.size(); i++) {
+            if (!categoryV1ClosureRepository.existsDirectLink(trail.get(i - 1).getId(),
+                    trail.get(i).getId())) {
+                throw new IllegalArgumentException("Invalid path: " + trail.get(i - 1).getName()
+                        + " -> " + trail.get(i).getName());
             }
-            trail.add(byName.get());
         }
 
-        CategoryV1 trailFirst = trail.getFirst();
-        List<CategoryNodeResponse> directChildren = mapToNodeResponse(
-                categoryV1ClosureRepository.findDirectChildren(trailFirst.getId()));
-        List<CategoryNodeResponse> descendants;
+        CategoryV1 first = trail.getFirst();
+        List<CategoryNodeResponse> firstChildren =
+                mapToNodeResponse(categoryV1ClosureRepository.findDirectChildren(first.getId()));
 
-        if (trail.size() >= 2) {
-            CategoryV1 last = trail.getLast();
-            descendants = mapToNodeResponse(
-                    categoryV1ClosureRepository.findDirectChildren(last.getId()));
-        } else {
-            descendants = Collections.emptyList();
-        }
+        List<CategoryNodeResponse> lastChildren =
+                (trail.size() >= 2)
+                        ? mapToNodeResponse(
+                        categoryV1ClosureRepository.findDirectChildren(trail.getLast().getId()))
+                        : List.of();
+
         List<CategoryNodeResponse> breadcrumb = mapToNodeResponse(trail);
 
-        return GetCategoryResponse.of(roots, directChildren, descendants, breadcrumb);
+        return GetCategoryResponse.of(roots, firstChildren, lastChildren, breadcrumb);
     }
+
 
     private static List<CategoryNodeResponse> mapToNodeResponse(List<CategoryV1> list) {
         return list.stream()

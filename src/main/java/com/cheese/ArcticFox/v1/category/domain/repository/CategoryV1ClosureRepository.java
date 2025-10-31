@@ -27,4 +27,12 @@ public interface CategoryV1ClosureRepository extends
             """)
     List<CategoryV1Closure> findByDescendant_Id(Long descendantId);
 
+    @Query("""
+              SELECT COUNT(cc) > 0
+              FROM CategoryV1Closure cc
+              WHERE cc.id.ancestorId = :parentId
+                AND cc.id.descendantId = :childId
+                AND cc.level = 1
+            """)
+    boolean existsDirectLink(Long parentId, Long childId);
 }
