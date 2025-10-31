@@ -2,6 +2,11 @@ spring:
   application:
     name: arctic-fox-service
 
+  config:
+    import: optional:file:.env[.properties]
+
   profiles:
     active: dev
+
+
 
