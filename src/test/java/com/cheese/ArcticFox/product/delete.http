@@ -1,0 +1,5 @@
+### 상품 삭제
+DELETE http://localhost:40000/api/v1/products/1
+
+###
+

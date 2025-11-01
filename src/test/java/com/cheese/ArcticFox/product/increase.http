@@ -1,0 +1,4 @@
+### 상품 수량 감소
+PATCH http://localhost:40000/api/v1/products/1/increase/5
+Content-Type: application/json
+

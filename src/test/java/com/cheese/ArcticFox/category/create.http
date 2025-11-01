@@ -1,9 +1,33 @@
+### 카테고리 생성: "식품"
 POST http://localhost:40000/api/v1/categories
 Content-Type: application/json
 
 {
-  "name": "test1",
-  "parentId": 3
+  "name": "식품"
 }
 
+### 카테고리 생성: "의류"
+POST http://localhost:40000/api/v1/categories
+Content-Type: application/json
 
+{
+  "name": "의류"
+}
+
+### 카테고리 생성: "식품/치즈"
+POST http://localhost:40000/api/v1/categories
+Content-Type: application/json
+
+{
+  "name": "치즈",
+  "parentId":1
+}
+
+### 카테고리 생성: "의류/상의"
+POST http://localhost:40000/api/v1/categories
+Content-Type: application/json
+
+{
+  "name": "상의",
+  "parentId": 3
+}
