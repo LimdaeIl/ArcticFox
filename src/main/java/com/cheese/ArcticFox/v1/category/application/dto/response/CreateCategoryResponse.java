@@ -7,6 +7,7 @@ import lombok.Builder;
 
 @Builder(access = AccessLevel.PRIVATE)
 public record CreateCategoryResponse(
+        Long id,
         String name,
         Long ancestor,
         Long descendant,
@@ -15,6 +16,7 @@ public record CreateCategoryResponse(
 
     public static CreateCategoryResponse from(CategoryV1 category, CategoryV1Closure closure) {
         return CreateCategoryResponse.builder()
+                .id(category.getId())
                 .name(category.getName())
                 .ancestor(closure.getAncestor().getId())
                 .descendant(closure.getDescendant().getId())
