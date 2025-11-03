@@ -1,0 +1,18 @@
+### 상품 수정(대상: category)
+PATCH http://localhost:40000/api/v1/products/1
+Content-Type: application/json
+
+{
+  "category": "상의"
+}
+
+### 상품 수정(대상: name, description, price, category)
+PATCH http://localhost:40000/api/v1/products/1
+Content-Type: application/json
+
+{
+  "name": "수정1",
+  "description": "수정1",
+  "price": 1000,
+  "category": "치즈"
+}

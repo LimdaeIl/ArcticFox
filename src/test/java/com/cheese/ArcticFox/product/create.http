@@ -1,0 +1,11 @@
+### 상품 생성
+POST http://localhost:40000/api/v1/products
+Content-Type: application/json
+
+{
+  "name": "파마산 치즈",
+  "description": "123",
+  "price": 10,
+  "stock": 10,
+  "categoryName": "치즈"
+}
