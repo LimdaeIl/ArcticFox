@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
-public class ProductService {
+public class ProductV1Service {
 
     private final ProductV1Repository productV1Repository;
 

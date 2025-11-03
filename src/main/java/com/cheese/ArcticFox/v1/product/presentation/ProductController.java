@@ -6,7 +6,7 @@ import com.cheese.ArcticFox.v1.product.application.dto.request.UpdateProductRequ
 import com.cheese.ArcticFox.v1.product.application.dto.response.CreateProductResponse;
 import com.cheese.ArcticFox.v1.product.application.dto.response.GetProductResponse;
 import com.cheese.ArcticFox.v1.product.application.dto.response.ProductStockResponse;
-import com.cheese.ArcticFox.v1.product.application.service.ProductService;
+import com.cheese.ArcticFox.v1.product.application.service.ProductV1Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,14 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ProductController {
 
-    private final ProductService productService;
+    private final ProductV1Service productV1Service;
 
     @PostMapping
     public ResponseEntity<CreateProductResponse> create(
             @RequestBody CreateProductRequest request
     ) {
 
-        CreateProductResponse response = productService.create(request);
+        CreateProductResponse response = productV1Service.create(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
@@ -50,7 +50,7 @@ public class ProductController {
             }) Pageable pageable
     ) {
 
-        Page<GetProductResponse> responses = productService.get(condition, pageable);
+        Page<GetProductResponse> responses = productV1Service.get(condition, pageable);
 
         return ResponseEntity.ok(responses);
     }
@@ -60,7 +60,7 @@ public class ProductController {
             @PathVariable Long productId,
             @PathVariable Integer count
     ) {
-        ProductStockResponse response = productService.decrease(productId, count);
+        ProductStockResponse response = productV1Service.decrease(productId, count);
         return ResponseEntity.ok(response);
 
     }
@@ -70,7 +70,7 @@ public class ProductController {
             @PathVariable Long productId,
             @PathVariable Integer count
     ) {
-        ProductStockResponse response = productService.increase(productId, count);
+        ProductStockResponse response = productV1Service.increase(productId, count);
         return ResponseEntity.ok(response);
 
     }
@@ -80,13 +80,13 @@ public class ProductController {
             @PathVariable Long productId,
             @RequestBody UpdateProductRequest request
     ) {
-        GetProductResponse response = productService.update(productId, request);
+        GetProductResponse response = productV1Service.update(productId, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{productId}")
     public ResponseEntity<Void> delete(@PathVariable Long productId) {
-        productService.delete(productId);
+        productV1Service.delete(productId);
         return ResponseEntity.noContent().build();
     }
 }
