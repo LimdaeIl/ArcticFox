@@ -1,8 +1,8 @@
 ### 상품 조회
 GET http://localhost:40000/api/v1/products
-    ?productName=치즈
+    ?productName=상품
     &minPrice=0
-    &maxPrice=50
+    &maxPrice=5000
     &inStock=true
     &page=0
     &size=20
@@ -13,3 +13,13 @@ Content-Type: application/json
 GET http://localhost:40000/api/v1/products
 Content-Type: application/json
 
+### 상품 조회
+GET http://localhost:40000/api/v1/products
+    ?categoryName=상의
+    &minPrice=0
+    &maxPrice=5000
+    &inStock=true
+    &page=0
+    &size=20
+    &sort=price,asc
+Content-Type: application/json
