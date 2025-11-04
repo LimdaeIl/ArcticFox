@@ -1,6 +1,7 @@
 package com.cheese.ArcticFox.v1.product.application.service;
 
 import com.cheese.ArcticFox.v1.category.domain.entity.CategoryV1;
+import com.cheese.ArcticFox.v1.category.domain.repository.CategoryV1ClosureRepository;
 import com.cheese.ArcticFox.v1.category.domain.repository.CategoryV1Repository;
 import com.cheese.ArcticFox.v1.product.application.dto.request.CreateProductRequest;
 import com.cheese.ArcticFox.v1.product.application.dto.request.ProductSearchCondition;
@@ -23,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductV1Service {
 
     private final ProductV1Repository productV1Repository;
+
+    private final CategoryV1ClosureRepository categoryV1ClosureRepository;
 
     private final CategoryV1Repository categoryV1Repository;
 
@@ -61,20 +64,65 @@ public class ProductV1Service {
         return ProductStockResponse.from(productById);
     }
 
+
     @Transactional(readOnly = true)
     public Page<GetProductResponse> get(ProductSearchCondition condition, Pageable pageable) {
-        Page<ProductV1> page = productV1Repository.findByCondition(
+        // 1) 카테고리 선택을 자손 포함 ID 리스트로 변환
+        List<Long> categoryIds = resolveCategoryIds(condition.categoryId(), condition.categoryName());
+
+        // 2) 레포 V2 호출 (자손 포함)
+        Page<ProductV1> page = productV1Repository.findByConditionV2(
                 condition.productName(),
-                condition.categoryName(),
-                condition.categoryId(),
                 condition.minPrice(),
                 condition.maxPrice(),
                 condition.inStock(),
                 condition.createdFrom(),
                 condition.createdTo(),
+                categoryIds, // null이면 전체
                 pageable
         );
+
         return page.map(GetProductResponse::from);
+    }
+
+    private List<Long> resolveCategoryIds(Long categoryId, String categoryNameOrPath) {
+        // (A) categoryId 우선
+        if (categoryId != null) {
+            return categoryV1ClosureRepository.findDescendantIdsIncludingSelf(categoryId);
+        }
+
+        // (B) 이름/경로
+        if (categoryNameOrPath == null || categoryNameOrPath.isBlank()) return null;
+
+        String normalized = normalize(categoryNameOrPath);
+        Long targetId;
+
+        if (normalized.contains("/")) {
+            // 경로: "의류/상의/셔츠"
+            String[] segs = normalized.split("/");
+            Long cur = null;
+            for (String name : segs) {
+                CategoryV1 node = categoryV1Repository.findByName(name)
+                        .orElseThrow(() -> new IllegalArgumentException("Category not found: " + name));
+                cur = node.getId();
+                // (선택) 직계 검증: 이전 cur와 existsDirectLink 체크 가능
+            }
+            targetId = cur;
+        } else {
+            // 단일 이름
+            CategoryV1 node = categoryV1Repository.findByName(normalized)
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found: " + normalized));
+            targetId = node.getId();
+        }
+
+        return categoryV1ClosureRepository.findDescendantIdsIncludingSelf(targetId);
+    }
+
+    private static String normalize(String raw) {
+        String p = raw.trim();
+        p = p.replaceAll("^/+|/+$", "");
+        p = p.replaceAll("/+", "/");
+        return p;
     }
 
     @Transactional

@@ -62,7 +62,6 @@ public class ProductController {
     ) {
         ProductStockResponse response = productV1Service.decrease(productId, count);
         return ResponseEntity.ok(response);
-
     }
 
     @PatchMapping("/{productId}/increase/{count}")
