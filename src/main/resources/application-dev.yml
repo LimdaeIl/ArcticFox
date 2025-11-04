@@ -27,6 +27,6 @@ spring:
         highlight_sql: true
         show_sql: true
         jdbc.time_zone: Asia/Seoul
-        generate_statistics: true
+        generate_statistics: false
         session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 300
     open-in-view: false
